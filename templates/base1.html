@@ -1,0 +1,370 @@
+<body style="margin:0;padding:0;font-family:Arial, sans-serif;background:#111;color:#fff;">
+<style>
+    /* Upload + Button Hover */
+    #uploadBtn {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    #uploadBtn:hover {
+        transform: scale(1.2); /* Grow */
+        background: #33ffff; /* Lighter blue */
+        box-shadow: 0 0 20px rgba(0, 225, 255, 0.8); /* Glow */
+    }
+
+    /* Home Button Hover */
+    #homeBtn {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    #homeBtn:hover {
+        transform: scale(1.2); /* Grow */
+        background: #ff8a50; /* Lighter orange */
+        box-shadow: 0 0 20px rgba(255, 87, 34, 0.8); /* Glow */
+    }
+</style>
+
+<!---------- SLIDE OUT ANIMATION STYLE ------------------>
+<style>
+    /* Slide out current page to left */
+    .slide-out-left {
+        animation: slideOutLeft 0.5s forwards;
+    }
+
+    @keyframes slideOutLeft {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(-100%); opacity: 0; }
+    }
+
+    /* Slide in new page from right */
+    .slide-in-right {
+        animation: slideInRight 0.5s forwards;
+    }
+
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Optional: make body overflow hidden during animation */
+    body {
+        overflow-x: hidden;
+    }
+</style>
+
+
+    <!-- UPLOAD PANEL -->
+    <div id="uploadPanel"
+        style="
+            width:100%;
+            background:#1e1e1e;
+            border-bottom:1px solid #333;
+            padding:30px;
+            position:fixed;
+            top:-500px;
+            left:0;
+            z-index:50;
+            transition:0.35s ease;
+            min-height: 200px;
+            box-sizing: border-box;
+        "
+    >
+
+
+        <h2 style="margin-bottom:10px;color:#00e1ff;font-size:40px;">Upload Your Reel</h2>
+
+        <form id="userreels" method="POST" 
+              action="/userupload_reels" enctype="multipart/form-data"
+              style="display:flex;flex-direction:column;gap:50px;">
+
+            <input type="hidden" name="uploader" value="SHAIK">
+
+            <input type="file" name="video" id="userFile" accept="video/*" required
+                   style="
+                        padding:12px;
+                        background:#222;
+                        color:#fff;
+                        border-radius:10px;
+                        border:1px solid #444;
+                        font-size:40px;
+                   ">
+
+            <button type="submit"
+                    style="
+                        padding:12px;
+                        background:#00e1ff;
+                        border:none;
+                        border-radius:10px;
+                        color:#000;
+                        font-size:30px;
+                        font-weight:bold;
+                        cursor:pointer;
+                    ">
+                Upload Reel
+            </button>
+        </form>
+
+        <video id="userPreview"
+               style="
+                    display:none;
+                    width:100%;
+                    max-width:350px;
+                    margin-top:12px;
+                    border-radius:12px;
+                    border:3px solid #eef0f0;
+               "
+               controls></video>
+    </div>
+
+    <!-- FLOATING UPLOAD BUTTON -->
+    <button id="uploadBtn"
+        style="
+            position:fixed;
+            bottom:20px;
+            right:90px;
+            width:100px;
+            height:100px;
+            border-radius:80%;
+            background:#f4f5f5;
+            border:none;
+            font-size:30px;
+            font-weight:bold;
+            color:#000;
+            cursor:pointer;
+            box-shadow:0 0 12px rgba(0,0,0,0.4);
+            z-index:60;
+        ">
+        +
+    </button>
+     <!-- HOME BUTTON --HOME BUTTON -------------------------->
+   <button id="homeBtn"
+      style="
+            position:fixed;
+            bottom:20px;
+            left:50px;          /* LEFT SIDE */
+            width:100px;
+            height:100px;
+            border-radius:80%;
+            background:#f4f2f3;  /* Different color for distinction */
+            border:none;
+            font-size:30px;
+            font-weight:bold;
+            color:#070707;
+            cursor:pointer;
+            box-shadow:0 0 12px rgba(0,0,0,0.4);
+            z-index:60;
+        ">
+        Back
+    </button>
+
+    <!-- FULLSCREEN REELS SCROLL AREA -->
+    <div id="reelsContainer"
+         style="
+            width:100%;
+            height:100vh;
+            overflow-y:scroll;
+            scroll-snap-type:y mandatory;
+            -webkit-overflow-scrolling:touch;
+         ">
+    </div>
+
+<script>
+
+// ------------------ GLOBAL SOUND FLAG (NEW) ------------------
+let soundEnabled = false;
+
+// ------------------ REELS AUTOPLAY LOGIC ------------------
+function applyAutoPlay() {
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            const video = entry.target.querySelector("video");
+            if (!video) return;
+
+            if (entry.isIntersecting) {
+
+                // 🔥 NEW — autoplay with sound only if user unmuted once
+                video.muted = !soundEnabled;
+
+                video.play().catch(() => {});
+                video.volume = 1.0;
+
+            } else {
+                video.pause();
+            }
+        });
+    }, { threshold: 0.7 });
+
+    document.querySelectorAll(".reel").forEach(reel => {
+        observer.observe(reel);
+    });
+}
+
+// ------------------ LOAD ALL REELS (SHUFFLED) ------------------
+async function loadReels() {
+    const res = await fetch("/all_user_reels");
+    const data = await res.json();
+
+    if (!data.urls || data.urls.length === 0) return;
+
+    const container = document.getElementById("reelsContainer");
+    container.innerHTML = "";
+
+    const shuffledUrls = data.urls.sort(() => Math.random() - 0.5);
+
+    shuffledUrls.forEach((url, index) => {
+        if (!url) return;
+
+        const div = document.createElement("div");
+        div.className = "reel";
+        div.style = `
+            height:100vh;
+            width:100%;
+            scroll-snap-align:start;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            background:#000;
+            overflow:hidden;
+            position:relative;
+        `;
+
+        div.innerHTML = `
+            <video 
+                src="${url}"
+                style="width:100%;height:100%;object-fit:contain;"
+                playsinline
+                controls
+                autoplay
+            ></video>
+
+            <div class="controls" style="
+                position:absolute;
+                top:50%;
+                right:20px;
+                transform:translateY(-50%);
+                display:flex;
+                flex-direction:column;
+                gap:20px;
+                z-index:5;
+            ">
+                <button class="playBtn" style="
+                    padding:14px 18px;
+                    font-size:18px;
+                    border-radius:8px;
+                    background:rgba(0,0,0,0.5);
+                    color:white;
+                    cursor:pointer;
+                ">Pause</button>
+
+                <button class="muteBtn" style="
+                    padding:14px 18px;
+                    font-size:18px;
+                    border-radius:8px;
+                    background:rgba(0,0,0,0.5);
+                    color:white;
+                    cursor:pointer;
+                ">Unmute</button>
+
+                <button class="downloadBtn" style="
+                    padding:14px 18px;
+                    font-size:18px;
+                    border-radius:8px;
+                    background:rgba(0,0,0,0.5);
+                    color:white;
+                    cursor:pointer;
+                ">Download</button>
+            </div>
+        `;
+
+        container.appendChild(div);
+
+        const videoEl = div.querySelector("video");
+        const playBtn = div.querySelector(".playBtn");
+        const muteBtn = div.querySelector(".muteBtn");
+        const downloadBtn = div.querySelector(".downloadBtn");
+
+        muteBtn.innerText = videoEl.muted ? 'Unmute' : 'Mute';
+
+        // Play/Pause
+        playBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            if (videoEl.paused) {
+                videoEl.play();
+                playBtn.innerText = 'Pause';
+            } else {
+                videoEl.pause();
+                playBtn.innerText = 'Play';
+            }
+        });
+
+        // Mute/Unmute (GLOBAL) --------------- NEW
+        muteBtn.addEventListener("click", e => {
+            e.stopPropagation();
+
+            soundEnabled = !soundEnabled;      // enable sound forever after first click
+            videoEl.muted = !soundEnabled;
+
+            muteBtn.innerText = soundEnabled ? 'Mute' : 'Unmute';
+        });
+
+        // Tap video to unmute ALL ---------------- NEW
+        videoEl.addEventListener("click", () => {
+            soundEnabled = true;
+            videoEl.muted = false;
+        });
+
+        // Download
+        downloadBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `video_${index+1}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+    });
+
+    applyAutoPlay();
+}
+
+loadReels();
+
+
+// ------------------ SLIDE PANEL OPEN / CLOSE ------------------
+const panel = document.getElementById("uploadPanel");
+const btn = document.getElementById("uploadBtn");
+let panelOpen = false;
+
+btn.addEventListener("click", () => {
+    panel.style.top = panelOpen ? "-300px" : "0px";
+    panelOpen = !panelOpen;
+});
+
+// ------------------ HOME BUTTON ------------------
+document.getElementById("homeBtn").addEventListener("click", () => {
+    document.body.classList.add("slide-out-left");
+    setTimeout(() => { window.location.href = "/main"; }, 500);
+});
+
+// ------------------ PREVIEW ------------------
+document.getElementById("userFile").addEventListener("change", e => {
+    const file = e.target.files[0];
+    const preview = document.getElementById("userPreview");
+
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+        preview.load();
+    }
+});
+
+document.getElementById("userreels").addEventListener("submit", () => {
+    setTimeout(() => {
+        document.getElementById("userPreview").style.display = "none";
+    }, 500);
+});
+
+</script>
+
+
+</body>

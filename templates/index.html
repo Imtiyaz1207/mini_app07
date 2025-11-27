@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>login page</title>
+
+    <style>
+        body {
+            background-color: lightblue;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        h2 {
+            color: white;
+            background-color: black;
+            padding: 12px;
+            margin: 0;
+            font-size: 22px;
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            margin: 130px auto;
+            width: 90%;
+            max-width: 350px;     /* important for mobile */
+            text-align: left;
+            border: 1px solid #ccc;
+            padding: 40px 25px;
+            background-color: rgb(9, 9, 9);
+            border-radius: 15px;
+            box-sizing: border-box;
+        }
+
+        .form-control {
+            width: 90%;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: none;
+            box-shadow: 2px 2px 5px grey;
+            font-size: 16px;
+        }
+
+        .btn {
+            background-color: rgb(47, 213, 89);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 25px;
+            width: 100%;
+            font-size: 17px;
+        }
+
+        .btn:hover {
+            background-color: rgb(5, 10, 6);
+        }
+
+        footer {
+            text-align: center;
+            padding: 12px;
+            background-color: rgb(11, 11, 11);
+            color: white;
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            font-size: 14px;
+        }
+
+        /* Mobile-specific tweaks */
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 20px;
+                padding: 10px;
+            }
+
+            .container {
+                margin-top: 40px;
+                padding: 30px 20px;
+            }
+
+            .btn {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>WELCOME TO THE APP</h2>
+
+
+<div class="container">
+
+
+<form onsubmit="submitForm(event)">
+    <input type="text" id="username" class="form-control" name="username" placeholder="Full name in small" required>
+    <input type="password" id="password" class="form-control" name="password" placeholder="Roll.no in caps" required>
+    <input class="btn" type="submit" value="Login">
+</form>
+
+   <!---- <form method="POST"    action="/register">
+        <input type="text" id="username" class="form-control" name="username" placeholder="Full name in samll" required>
+        <input type="password" id="password" class="form-control" name="password" placeholder="Roll.no in caps " required>
+        <input class="btn" type="submit" value="Login">
+    </form> -->
+
+    <p style="text-align:center; font-size: 14px; color: #cc22b5; margin-top: 20px;">
+        Don't have an account? <a href="/signin" style="color:#e5e3eb;">Create Account</a>
+    </p>
+    <p style="text-align:left; font-size: 10px; color: #cc22b5; margin-top: 5px;"> </p>
+</div>
+
+
+<footer>Built by Shaik❤️💫</footer>
+
+</body>
+<script>
+async function submitForm(event) {
+    event.preventDefault(); // stop normal form submit
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const res = await fetch('/save_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.redirect) {
+            window.location.href = data.redirect;
+        } else {
+            alert(data.message || "Saved!");
+        }
+
+    } catch (error) {
+        alert("Network Error");
+    }
+}
+</script>
+
+</html>

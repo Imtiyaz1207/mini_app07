@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Story Dashboard</title>
+  <style>
+    :root { --accent1:#166fd4; --accent2:#bf4b9e; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Inter, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #f0f5ff, #f8f4ff);
+      color: #111;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      flex: 1;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+  
+
+
+    header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .logo{ width:50px; height:50px; border-radius:10px; background: linear-gradient(45deg,var(--accent1),var(--accent2)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .actions{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+    button.action{ padding:12px 8px; border-radius:12px; border:none; cursor:pointer; background: linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; font-weight:600; box-shadow:0 8px 28px rgba(2,6,23,0.06); }
+    main{ margin-top:18px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .panel{ width:100%; max-width:720px; background:#fff; padding:60px; border-radius:12px; box-shadow:0 10px 30px rgba(2,6,23,0.03); }
+    .player{ width:100%; max-width:720px; border-radius:12px; overflow:hidden; background:#000; }
+    video{ width:100%; height:auto; display:block; }
+    .form-row{ display:flex; gap:8px; align-items:center; }
+    input[type=file], input[type=text] { width:100%; padding:10px; border-radius:8px; border:1px solid #eee; }
+    .preview{ display:block; margin-top:10px; border-radius:8px; max-height:360px; width:100%; object-fit:cover; }
+    .chat-box{ height:250px; display:flex; flex-direction:column; gap:8px; }
+    .messages{ flex:1; overflow:auto; padding:8px; border-radius:8px; border:1px solid #f0f0f0; }
+    .msg{ background: linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; padding:8px 10px; margin-bottom:8px; border-radius:8px; display:inline-block; max-width:85%; }
+    .chat-input{ display:flex; gap:8px; margin-top:6px; }
+    footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #050000;
+      padding: 10px 0;
+      margin-top: auto;
+    }
+    .video-error {
+      color: #bf4b9e;
+      background: #fff0f6;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 8px;
+      text-align: center;
+      display: none;
+    }
+    @media(min-width:900px){ .actions{ justify-content:flex-start; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">#5C1</div>
+        <div>
+          <div style="font-weight:700;">Shaik_Imtiyaz07</div>
+          <div style="font-size:0.9rem; color:#555;">Upload & play admin/user stories • Chat live</div>
+        </div>
+      </div>
+      <div style="text-align:right=60%;">
+        <div style="font-size:0.9rem; color:#555;">Logged in</div>
+      </div>
+    </header>
+
+    <div class="actions">
+      <button class="action" id="btnAdmin" onclick="showAdmin()" aria-label="Show Admin Story Panel">Admin Story</button>
+      <button class="action" id="btnUser" onclick="showUser()" aria-label="Show User Story Panel">User Story</button>
+      <button class="action" id="btnChat" onclick="showChat()" aria-label="Show Chat Panel">Chat</button>
+      <button class="action" onclick="window.location.href='/base1'" aria-label="Go to About Page">Reels</button>
+      <button class="action" onclick="window.location.href='/logout'" aria-label="Logout">Logout</button>
+    </div>
+
+    <main>
+
+      <!-- Welcome message -->
+      <p id="welcomeMessage" style="text-align:center; font-size:1.0rem; color:#333;">
+        Hii Fathima! Agar aap yeh message padre tho plzz at least kuch tho response dho...I really want to be your friend🌸<br>
+        I'll wait for your response 😊💫
+      </p>
+
+      <!-- player -->
+      <div id="playerWrapper" class="player panel" style="display:none;">
+        <video id="mainVideo" controls playsinline muted>
+          <source id="mainSource" src="" type="video/mp4" />
+          Your browser does not support HTML5 video.
+        </video>
+        <div id="videoError" class="video-error">Sorry, the video could not be loaded or played.</div>
+      </div>
+
+      <!-- admin panel -->
+
+      <div id="adminPanel" class="panel" style="display:none;">
+        <h3>Admin — Upload Story</h3>
+        <form id="formAdmin" method="POST" action="/upload_story_video" enctype="multipart/form-data">
+          <input type="hidden" name="uploader" value="admin" />
+          <div class="form-row">
+            <label for="adminFile" style="display:none;">Admin Video File</label>
+            <input type="file" name="video" id="adminFile" accept="video/*" required aria-label="Choose admin video file" />
+            <button type="submit" class="action" aria-label="Upload Admin Video">Upload</button>
+          </div>
+          <video id="adminPreview" class="preview" controls style="display:none;"></video>
+        </form>
+      </div>
+    
+
+      <!-- user panel -->
+      <div id="userPanel" class="panel" style="display:none;">
+        <h3>User — Post Your Story</h3>
+        <form id="formUser" method="POST" action="/upload_story_video" enctype="multipart/form-data">
+          <input type="hidden" name="uploader" value="user" />
+          <div class="form-row">
+            <label for="userFile" style="display:none;">User Video File</label>
+            <input type="file" name="video" id="userFile" accept="video/*" required aria-label="Choose user video file" />
+            <button type="submit" class="action" aria-label="Upload User Video">Upload</button>
+          </div>
+          <video id="userPreview" class="preview" controls style="display:none;"></video>
+        </form>
+      </div>
+
+      <!-- chat panel -->
+      <div id="chatPanel" class="panel" style="display:none;">
+        <h3>Chat</h3>
+        <div class="chat-box">
+          <div id="messages" class="messages"></div>
+          <div class="chat-input">
+            <input id="chatText" placeholder="Type your message..." aria-label="Type your message" />
+            <button class="action" onclick="sendMessage()" aria-label="Send Chat Message">Send</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+  </div>
+
+<script>
+  let currentMode = null;
+
+  function hideAll() {
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('userPanel').style.display = 'none';
+    document.getElementById('chatPanel').style.display = 'none';
+    document.getElementById('playerWrapper').style.display = 'none';
+  }
+
+  function showAdmin() {
+    currentMode = 'admin';
+    hideAll();
+    document.getElementById('adminPanel').style.display = 'block';
+    loadLast('admin');
+  }
+
+  function showUser() {
+    currentMode = 'user';
+    hideAll();
+    document.getElementById('userPanel').style.display = 'block';
+    loadLast('user');
+  }
+
+  function showChat() {
+    currentMode = 'chat';
+    hideAll();
+    document.getElementById('chatPanel').style.display = 'block';
+    const mv = document.getElementById('mainVideo');
+    try { mv.pause(); } catch (e) {}
+  }
+
+  // Preview selected file for admin and user before upload
+  document.getElementById('adminFile').addEventListener('change', function(e) {
+    const f = e.target.files[0];
+    const v = document.getElementById('adminPreview');
+    if (f) {
+      v.src = URL.createObjectURL(f);
+      v.style.display = 'block';
+      v.load();
+    }
+  });
+  document.getElementById('formAdmin').addEventListener('submit', function() {
+    setTimeout(() => {
+      document.getElementById('adminPreview').style.display = 'none';
+      document.getElementById('adminPreview').src = '';
+    }, 500);
+  });
+
+  document.getElementById('userFile').addEventListener('change', function(e) {
+    const f = e.target.files[0];
+    const v = document.getElementById('userPreview');
+    if (f) {
+      v.src = URL.createObjectURL(f);
+      v.style.display = 'block';
+      v.load();
+    }
+  });
+  document.getElementById('formUser').addEventListener('submit', function() {
+    setTimeout(() => {
+      document.getElementById('userPreview').style.display = 'none';
+      document.getElementById('userPreview').src = '';
+    }, 500);
+  });
+
+  async function sendMessage() {
+    const txt = document.getElementById('chatText');
+    const message = txt.value.trim();
+    if (!message) return;
+    try {
+      await fetch('/log_chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({chat: message})
+      });
+      appendMessage(message);
+      txt.value = '';
+    } catch (e) {
+      alert('Failed to send message');
+    }
+  }
+
+  function appendMessage(msg) {
+    const cont = document.getElementById('messages');
+    const d = document.createElement('div');
+    d.className = 'msg';
+    d.textContent = msg;
+    cont.appendChild(d);
+    cont.scrollTop = cont.scrollHeight;
+  }
+
+  // Helper to get video MIME type from URL
+  function getVideoType(url) {
+    if (!url) return 'video/mp4';
+    const ext = url.split('.').pop().toLowerCase();
+    if (ext === 'webm') return 'video/webm';
+    if (ext === 'ogg') return 'video/ogg';
+    if (ext === 'mkv') return 'video/x-matroska';
+    if (ext === 'mov') return 'video/quicktime';
+    return 'video/mp4';
+  }
+
+  // Load last admin/user story and handle video errors
+  async function loadLast(type) {
+    const endpoint = type === 'admin' ? '/last_admin_story' : '/last_user_story';
+    try {
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      const player = document.getElementById('mainVideo');
+      const source = document.getElementById('mainSource');
+      const errorDiv = document.getElementById('videoError');
+      errorDiv.style.display = 'none';
+
+      if (data.url) {
+        source.src = data.url;
+        source.type = getVideoType(data.url);
+        player.load();
+        document.getElementById('playerWrapper').style.display = 'block';
+        player.play().catch(()=>{});
+        player.onerror = function() {
+          errorDiv.style.display = 'block';
+        };
+      } else {
+        document.getElementById('playerWrapper').style.display = 'none';
+      }
+    } catch (e) {
+      console.error('Failed to load last story', e);
+    }
+  }
+
+  window.addEventListener('load', function() {
+    showAdmin();
+  });
+
+
+  
+  
+
+
+
+</script>
+
+<footer>Made with ❤️ by Shaik!</footer>
+</body>
+</html>
